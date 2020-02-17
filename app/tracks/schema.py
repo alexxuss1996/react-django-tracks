@@ -11,12 +11,20 @@ class TrackType(DjangoObjectType):
     class Meta:
         model = Track
 
+class LikeType(DjangoObjectType):
+    class Meta:
+        model = Like
+
 
 class Query(graphene.ObjectType):
     tracks = graphene.List(TrackType)
+    likes = graphene.List(LikeType)
 
     def resolve_tracks(self, info):
         return Track.objects.all()
+
+    def resolve_likes(self, info):
+        return Like.objects.all()
 
 
 class CreateTrack(graphene.Mutation):
@@ -94,7 +102,9 @@ class CreateLike(graphene.Mutation):
         user = info.context.user
         if user.is_anonymous:
             raise Exception('Login to like tracks.')
+
         track = Track.objects.get(id=track_id)
+
         if not track:
             raise Exception('Cannot find track with given track id.')
 
