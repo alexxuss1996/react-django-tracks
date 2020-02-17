@@ -1,10 +1,12 @@
 import graphene
 import uuid
 from graphene_django import DjangoObjectType
+from django.db.models import Q
+
 from datetime import datetime
 from graphql import GraphQLError
-from .models import Track, Like
 
+from .models import Track, Like
 from users.schema import UserType
 
 
@@ -12,16 +14,27 @@ class TrackType(DjangoObjectType):
     class Meta:
         model = Track
 
+
 class LikeType(DjangoObjectType):
     class Meta:
         model = Like
 
 
 class Query(graphene.ObjectType):
-    tracks = graphene.List(TrackType)
+    tracks = graphene.List(TrackType, search=graphene.String())
     likes = graphene.List(LikeType)
 
-    def resolve_tracks(self, info):
+    def resolve_tracks(self, info, search=None):
+        if search:
+            filter = (
+                Q(title__icontains=search) |
+                Q(description__icontains=search) |
+                Q(url__icontains=search) |
+                Q(posted_by__username__icontains=search)
+            )
+
+            return Track.objects.filter(filter)
+
         return Track.objects.all()
 
     def resolve_likes(self, info):
